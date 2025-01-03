@@ -2,9 +2,17 @@
   "appId": "com.example.plugin",
   "appName": "example-app",
   "webDir": "dist",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  },
   "plugins": {
     "SplashScreen": {
-      "launchAutoHide": false
+      "launchAutoHide": true,
+      "launchShowDuration": 1000
+    },
+    "Nfc": {
+      "pluginPath": ".."
     }
   }
 }

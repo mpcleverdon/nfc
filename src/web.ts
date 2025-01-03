@@ -1,10 +1,20 @@
 import { WebPlugin } from '@capacitor/core';
-
 import type { NfcPlugin } from './definitions';
 
 export class NfcWeb extends WebPlugin implements NfcPlugin {
-  async echo(options: { value: string }): Promise<{ value: string }> {
-    console.log('ECHO', options);
-    return options;
+  async isEnabled(): Promise<{ enabled: boolean }> {
+    throw this.unavailable('NFC not available in browser');
+  }
+
+  async startScanning(): Promise<void> {
+    throw this.unavailable('NFC not available in browser');
+  }
+
+  async stopScanning(): Promise<void> {
+    throw this.unavailable('NFC not available in browser');
+  }
+
+  async write(options: { text: string }): Promise<void> {
+    throw this.unavailable('NFC not available in browser');
   }
 }
