@@ -1,11 +1,13 @@
-# nfc
+# Capacitor NFC Plugin
 
-nfc information transfer between devices
+![npm version](https://img.shields.io/npm/v/capacitor-nfc-plugin)
+![npm downloads](https://img.shields.io/npm/dm/capacitor-nfc-plugin)
+![npm license](https://img.shields.io/npm/l/capacitor-nfc-plugin)
 
 ## Install
 
 ```bash
-npm install nfc
+npm install capacitor-nfc-plugin
 npx cap sync
 ```
 
@@ -13,7 +15,15 @@ npx cap sync
 
 <docgen-index>
 
-* [`echo(...)`](#echo)
+* [`isEnabled()`](#isenabled)
+* [`startScanning()`](#startscanning)
+* [`stopScanning()`](#stopscanning)
+* [`write(...)`](#write)
+* [`addListener('nfcTagDetected', ...)`](#addlistenernfctagdetected-)
+* [`addListener('nfcStatus', ...)`](#addlistenernfcstatus-)
+* [`getTagInfo()`](#gettaginfo)
+* [`read()`](#read)
+* [Interfaces](#interfaces)
 
 </docgen-index>
 

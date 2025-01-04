@@ -1,0 +1,33 @@
+# Development files
+.idea/
+.vscode/
+node_modules/
+example-app/
+src/
+tsconfig.json
+rollup.config.js
+.eslintrc.js
+.prettierrc.js
+.swiftlint.yml
+
+# Build artifacts
+android/build/
+ios/Build/
+ios/Pods/
+ios/*.xcworkspace/
+ios/*.xcodeproj/xcuserdata/
+ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+
+# Test files
+__tests__/
+*.test.ts
+*.spec.ts
+TEST_PLAN.md
+
+# Git files
+.git/
+.gitignore
+
+# Misc
+.DS_Store
+*.log 

@@ -230,17 +230,25 @@ public class NfcPlugin extends Plugin {
                 if (writeParams != null) {
                     writeNdefMessage(tag, writeParams);
                     writeParams = null;
-                    if (savedCallId != null) {
+                } else if (savedCallId != null) {
+                    // This is a read operation
+                    try {
+                        JSObject result = readTag(tag);
                         PluginCall savedCall = bridge.getSavedCall(savedCallId);
                         if (savedCall != null) {
-                            savedCall.resolve();
+                            savedCall.resolve(result);
                             bridge.releaseCall(savedCallId);
-                            savedCallId = null;
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error reading tag", e);
+                        PluginCall savedCall = bridge.getSavedCall(savedCallId);
+                        if (savedCall != null) {
+                            savedCall.reject("Error reading tag: " + e.getMessage());
+                            bridge.releaseCall(savedCallId);
                         }
                     }
-                } else {
-                    handleTag(tag);
                 }
+                savedCallId = null;
             }
         }
     }
@@ -690,5 +698,111 @@ public class NfcPlugin extends Plugin {
                              + Character.digit(s.charAt(i+1), 16));
         }
         return data;
+    }
+
+    @PluginMethod
+    public void read(PluginCall call) {
+        if (!hasRequiredPermissions()) {
+            requestPermissions(call);
+            return;
+        }
+
+        if (nfcAdapter == null) {
+            call.reject("NFC is not available on this device");
+            return;
+        }
+
+        if (!nfcAdapter.isEnabled()) {
+            call.reject("NFC is disabled");
+            return;
+        }
+
+        try {
+            Activity activity = getActivity();
+            IntentFilter[] readTagFilters = new IntentFilter[] {
+                new IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED),
+                new IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED),
+                new IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED)
+            };
+
+            // Store the call for later use
+            savedCallId = call.getCallbackId();
+            bridge.saveCall(call);
+
+            // Enable foreground dispatch
+            nfcAdapter.enableForegroundDispatch(activity, pendingIntent, readTagFilters, null);
+            notifyListeners("nfcStatus", new JSObject().put("status", "Ready to read. Please touch an NFC tag."));
+        } catch (Exception e) {
+            call.reject("Failed to start NFC reading: " + e.getMessage());
+        }
+    }
+
+    private JSObject readTag(Tag tag) throws Exception {
+        JSObject result = new JSObject();
+        
+        // Get basic tag info
+        byte[] tagId = tag != null ? tag.getId() : null;
+        if (tagId != null && tagId.length > 0) {
+            result.put("id", bytesToHexString(tagId));
+        }
+        
+        // Get tech types
+        List<String> techList = new ArrayList<>();
+        if (tag.getTechList() != null) {
+            for (String tech : tag.getTechList()) {
+                techList.add(tech.replace("android.nfc.tech.", ""));
+            }
+        }
+        result.put("techTypes", new JSArray(techList));
+
+        // Try to read NDEF data first
+        Ndef ndef = Ndef.get(tag);
+        if (ndef != null) {
+            ndef.connect();
+            try {
+                result.put("type", "NDEF");
+                result.put("maxSize", ndef.getMaxSize());
+                result.put("isWritable", ndef.isWritable());
+                
+                NdefMessage ndefMessage = ndef.getNdefMessage();
+                if (ndefMessage != null) {
+                    handleNdefMessage(ndefMessage, result);
+                }
+            } finally {
+                ndef.close();
+            }
+            return result;
+        }
+
+        // If not NDEF, try ISO-DEP
+        IsoDep isoDep = IsoDep.get(tag);
+        if (isoDep != null) {
+            isoDep.connect();
+            try {
+                result.put("type", "ISO_DEP");
+                result.put("hiLayerResponse", bytesToHexString(isoDep.getHiLayerResponse()));
+                result.put("historicalBytes", bytesToHexString(isoDep.getHistoricalBytes()));
+                
+                // Try to read using standard READ command
+                byte[] readCommand = new byte[] {
+                    (byte)0x00, // CLA
+                    (byte)0xD0, // INS (READ)
+                    (byte)0x01, // P1 (read mode)
+                    (byte)0x00  // P2
+                };
+                
+                byte[] response = isoDep.transceive(readCommand);
+                if (response != null && response.length > 2) {
+                    String data = new String(response, 0, response.length - 2, StandardCharsets.UTF_8);
+                    result.put("data", data);
+                }
+            } finally {
+                isoDep.close();
+            }
+            return result;
+        }
+
+        // Add support for other tag types as needed
+        throw new Exception("Unsupported tag type");
     }
 }

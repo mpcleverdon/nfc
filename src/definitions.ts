@@ -1,3 +1,5 @@
+import type { PluginListenerHandle } from '@capacitor/core';
+
 export interface NfcPlugin {
   /**
    * Check if NFC is available and enabled on the device
@@ -49,6 +51,12 @@ export interface NfcPlugin {
    * @returns Promise with tag technology information
    */
   getTagInfo(): Promise<NFCTagInfo>;
+
+  /**
+   * Read data from an NFC tag
+   * @returns Promise that resolves with the read data
+   */
+  read(): Promise<NFCReadResult>;
 }
 
 export interface NFCTagInfo {
@@ -97,4 +105,15 @@ export interface WriteOptions {
 export interface WebRTCConnectionEvent {
   type: 'offer' | 'answer';
   data: WebRTCConnectionInfo;
+}
+
+// Add new interface for read results
+export interface NFCReadResult {
+  type: string;
+  data?: string;
+  records?: NFCRecord[];
+  techTypes?: string[];
+  id?: string;
+  maxSize?: number;
+  isWritable?: boolean;
 }

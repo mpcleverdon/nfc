@@ -162,6 +162,16 @@ function createTestUI() {
         }
     }));
     
+    // Add to the basic controls section
+    basicControls.appendChild(createButton('Read Tag', async () => {
+        try {
+            const result = await Nfc.read();
+            log('Read Result:', result);
+        } catch (error) {
+            logError('Read Error:', error);
+        }
+    }));
+    
     // Tag Info Section
     const tagControls = document.createElement('div');
     tagControls.className = 'control-group';

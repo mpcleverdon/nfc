@@ -93,6 +93,25 @@ public class NfcPlugin: CAPPlugin, NFCNDEFReaderSessionDelegate {
         }
     }
     
+    @objc func read(_ call: CAPPluginCall) {
+        if #available(iOS 13.0, *) {
+            guard NFCNDEFReaderSession.readingAvailable else {
+                call.reject("NFC is not available on this device")
+                return
+            }
+            
+            scanningCall = call
+            
+            readerSession = NFCNDEFReaderSession(delegate: self,
+                                                queue: nil,
+                                                invalidateAfterFirstRead: true)
+            readerSession?.alertMessage = "Hold your iPhone near an NFC tag"
+            readerSession?.begin()
+        } else {
+            call.reject("NFC requires iOS 13.0 or later")
+        }
+    }
+    
     // MARK: - NFCNDEFReaderSessionDelegate
     
     public func readerSession(_ session: NFCNDEFReaderSession,
@@ -143,18 +162,56 @@ public class NfcPlugin: CAPPlugin, NFCNDEFReaderSessionDelegate {
             return
         }
         
-        // Connect to tag
         session.connect(to: tag) { error in
             if let error = error {
                 session.invalidate(errorMessage: "Connection error: \(error.localizedDescription)")
                 return
             }
             
-            // Check if this is a write operation
-            if let textToWrite = self.writeData {
-                self.performWrite(session: session, tag: tag, text: textToWrite)
-            } else {
-                self.handleTag(session: session, tag: tag)
+            tag.queryNDEFStatus { status, capacity, error in
+                if let error = error {
+                    session.invalidate(errorMessage: "Failed to query tag: \(error.localizedDescription)")
+                    return
+                }
+                
+                var result: [String: Any] = [
+                    "type": "NDEF",
+                    "isWritable": status == .readWrite,
+                    "maxSize": capacity
+                ]
+                
+                tag.readNDEF { message, error in
+                    if let error = error {
+                        session.invalidate(errorMessage: "Read error: \(error.localizedDescription)")
+                        return
+                    }
+                    
+                    if let message = message {
+                        let records = message.records.map { record -> [String: Any] in
+                            var recordData: [String: Any] = [
+                                "type": String(data: record.type, encoding: .utf8) ?? "",
+                                "identifier": String(data: record.identifier, encoding: .utf8) ?? ""
+                            ]
+                            
+                            if record.typeNameFormat == .nfcWellKnown && record.type == "T".data(using: .utf8) {
+                                if let payload = String(data: record.payload.dropFirst(), encoding: .utf8) {
+                                    recordData["payload"] = payload
+                                }
+                            } else {
+                                recordData["payload"] = String(data: record.payload, encoding: .utf8) ?? ""
+                            }
+                            
+                            return recordData
+                        }
+                        
+                        result["records"] = records
+                        
+                        DispatchQueue.main.async {
+                            self.scanningCall?.resolve(result)
+                            session.invalidate()
+                        }
+                    }
+                }
             }
         }
     }
