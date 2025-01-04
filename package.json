@@ -1,7 +1,7 @@
 {
-  "name": "nfc",
-  "version": "0.0.1",
-  "description": "nfc information transfer between devices",
+  "name": "capacitor-nfc-plugin",
+  "version": "1.0.2",
+  "description": "Capacitor NFC plugin for device-to-device communication and WebRTC initialization",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",
   "types": "dist/esm/index.d.ts",
@@ -13,25 +13,31 @@
     "ios/Sources",
     "ios/Tests",
     "Package.swift",
-    "Nfc.podspec"
+    "Nfc.podspec",
+    "README.md",
+    "LICENSE"
   ],
   "author": "Mark Cleverdon",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mpcleverdon/nfc.git"
+    "url": "git+https://github.com/mpcleverdon/capacitor-nfc-plugin.git"
   },
   "bugs": {
-    "url": "https://github.com/mpcleverdon/nfc/issues"
+    "url": "https://github.com/mpcleverdon/capacitor-nfc-plugin/issues"
   },
   "keywords": [
     "capacitor",
     "plugin",
-    "native"
+    "native",
+    "nfc",
+    "webrtc",
+    "p2p",
+    "communication"
   ],
   "scripts": {
     "verify": "npm run verify:ios && npm run verify:android && npm run verify:web",
-    "verify:ios": "xcodebuild -scheme Nfc -destination generic/platform=iOS",
+    "verify:ios": "cd ios && pod install && xcodebuild -scheme Nfc -workspace Plugin.xcworkspace -destination generic/platform=iOS && cd ..",
     "verify:android": "cd android && ./gradlew clean build test && cd ..",
     "verify:web": "npm run build",
     "lint": "npm run eslint && npm run prettier -- --check && npm run swiftlint -- lint",
@@ -43,7 +49,11 @@
     "build": "npm run clean && npm run docgen && tsc && rollup -c rollup.config.mjs",
     "clean": "rimraf ./dist",
     "watch": "tsc --watch",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "prepare": "npm run build"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "devDependencies": {
     "@capacitor/android": "^6.0.0",
