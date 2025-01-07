@@ -1,6 +1,6 @@
 {
-  "appId": "com.example.plugin",
-  "appName": "example-app",
+  "appId": "tools.bink.nfc.example",
+  "appName": "nfc-example-app",
   "webDir": "dist",
   "server": {
     "androidScheme": "http",

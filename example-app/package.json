@@ -11,17 +11,19 @@
     "start": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "sync": "npm run build && npx cap sync"
+    "sync": "npm run build && npx cap sync",
+    "resources": "capacitor-assets generate"
   },
   "dependencies": {
-    "@capacitor/core": "latest",
+    "@capacitor/android": "^6.0.0",
     "@capacitor/camera": "latest",
-    "@capacitor/splash-screen": "latest",
-    "nfc": "file:..",
+    "@capacitor/core": "latest",
     "@capacitor/ios": "^6.0.0",
-    "@capacitor/android": "^6.0.0"
+    "@capacitor/splash-screen": "latest",
+    "nfc": "file:.."
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "latest",
     "vite": "^5.4.2"
   },

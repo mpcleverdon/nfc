@@ -239,6 +239,56 @@ function createTestUI() {
         }
     }));
     
+    // Add a specific clone button for MIFARE Ultralight
+    basicControls.appendChild(createButton('Clone MIFARE Ultralight', async () => {
+        try {
+            // First read the original card
+            const tagInfo = await Nfc.getTagInfo();
+            log('Original Card Info:', tagInfo);
+            
+            if (tagInfo.type !== 'MIFARE_ULTRALIGHT') {
+                throw new Error('This is not a MIFARE Ultralight card');
+            }
+            
+            // Store the data for emulation
+            await Nfc.write({
+                mode: 'emulator',
+                cardType: 'MIFARE_ULTRALIGHT',
+                originalData: {
+                    type: tagInfo.type,
+                    data: tagInfo.data,
+                    ndefMessage: tagInfo.ndefMessage
+                }
+            });
+            
+            log('Ready to emulate MIFARE Ultralight card. Touch another device to clone.');
+        } catch (error) {
+            logError('Clone Error:', error);
+        }
+    }));
+    
+    // Add a verify button to check if clone was successful
+    basicControls.appendChild(createButton('Verify Clone', async () => {
+        try {
+            const newTagInfo = await Nfc.getTagInfo();
+            log('Cloned Card Info:', newTagInfo);
+            
+            // Compare with original data
+            if (savedOriginalData) {
+                const isMatch = compareCardData(savedOriginalData, newTagInfo);
+                log('Clone Verification:', isMatch ? 'SUCCESS' : 'FAILED');
+            }
+        } catch (error) {
+            logError('Verify Error:', error);
+        }
+    }));
+    
+    // Helper function to compare card data
+    function compareCardData(original, clone) {
+        return original.data === clone.data && 
+               original.ndefMessage === clone.ndefMessage;
+    }
+    
     return container;
 }
 
