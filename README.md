@@ -11,6 +11,100 @@ npm install capacitor-nfc-plugin
 npx cap sync
 ```
 
+## Usage Examples
+
+### Basic NFC Reading
+
+```typescript
+// Read any NFC tag
+const readResult = await Nfc.read();
+console.log('Read Result:', readResult);
+
+// Get detailed tag info
+const tagInfo = await Nfc.getTagInfo();
+console.log('Tag Info:', tagInfo);
+```
+
+### Reading Different Card Types
+
+1. NDEF Formatted Cards:
+```typescript
+// Read NDEF data
+const result = await Nfc.read();
+// Result will contain formatted NDEF messages
+console.log('NDEF Data:', result.records);
+```
+
+2. MIFARE Classic Cards:
+```typescript
+// Read MIFARE Classic card
+const tagInfo = await Nfc.getTagInfo();
+if (tagInfo.type === 'MIFARE_CLASSIC') {
+    console.log('Card Size:', tagInfo.size);
+    console.log('Sector Count:', tagInfo.sectorCount);
+    console.log('Block Count:', tagInfo.blockCount);
+    // If authentication succeeded, you'll see block0 data
+    if (tagInfo.block0) {
+        console.log('Block 0 Data:', tagInfo.block0);
+    }
+}
+```
+
+3. ISO-DEP Cards (Banking cards, ID cards):
+```typescript
+// Read ISO-DEP card with specific AID
+await Nfc.write({
+    mode: 'reader',
+    cardType: 'iso_dep',
+    aid: 'F0010203040506', // Replace with your card's AID
+    text: ''  // Empty text indicates read mode
+});
+
+// Listen for the read result
+Nfc.addListener('readSuccess', (event) => {
+    console.log('Card Data:', event.data);
+    console.log('Historical Bytes:', event.historicalBytes);
+});
+```
+
+### Example Response Data
+
+1. MIFARE Classic Response:
+```json
+{
+    "type": "MIFARE_CLASSIC",
+    "size": 1024,
+    "sectorCount": 16,
+    "blockCount": 64,
+    "block0": "0123456789ABCDEF",
+    "maxTransceiveLength": 253
+}
+```
+
+2. ISO-DEP Response:
+```json
+{
+    "type": "ISO_DEP",
+    "hiLayerResponse": "0123456789",
+    "historicalBytes": "ABCDEF0123",
+    "cardData": "0123456789ABCDEF"
+}
+```
+
+3. NDEF Message Response:
+```json
+{
+    "type": "NDEF",
+    "records": [
+        {
+            "type": "text/plain",
+            "payload": "Hello NFC",
+            "identifier": ""
+        }
+    ]
+}
+```
+
 ## API
 
 <docgen-index>

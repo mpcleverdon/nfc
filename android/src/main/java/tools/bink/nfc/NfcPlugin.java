@@ -546,6 +546,15 @@ public class NfcPlugin extends Plugin {
         if (mifare != null) {
             mifare.connect();
             try {
+                // Read specific sectors
+                byte[] data = new byte[16];
+                boolean auth = mifare.authenticateSectorWithKeyA(0, MifareClassic.KEY_DEFAULT);
+                if (auth) {
+                    // Read block 0 of sector 0
+                    data = mifare.readBlock(0);
+                    tagInfo.put("block0", bytesToHexString(data));
+                }
+                
                 tagInfo.put("type", "MIFARE_CLASSIC");
                 tagInfo.put("size", mifare.getSize());
                 tagInfo.put("sectorCount", mifare.getSectorCount());
@@ -576,10 +585,23 @@ public class NfcPlugin extends Plugin {
         if (isoDep != null) {
             isoDep.connect();
             try {
+                // Example: Read card number (for some banking cards)
+                byte[] command = new byte[] {
+                    (byte)0x00, // CLA
+                    (byte)0xB2, // INS
+                    (byte)0x01, // P1
+                    (byte)0x0C, // P2
+                    (byte)0x00  // Le
+                };
+                
+                byte[] response = isoDep.transceive(command);
+                if (response != null && response.length > 2) {
+                    tagInfo.put("cardData", bytesToHexString(response));
+                }
+                
                 tagInfo.put("type", "ISO_DEP");
                 tagInfo.put("hiLayerResponse", bytesToHexString(isoDep.getHiLayerResponse()));
                 tagInfo.put("historicalBytes", bytesToHexString(isoDep.getHistoricalBytes()));
-                tagInfo.put("maxTransceiveLength", isoDep.getMaxTransceiveLength());
             } finally {
                 isoDep.close();
             }

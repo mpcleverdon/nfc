@@ -31,20 +31,49 @@ export interface NfcPlugin {
    * @param eventName Name of the event to listen for
    * @param listenerFunc Callback function when event occurs
    */
-  addListener(
-    eventName: 'nfcTagDetected',
-    listenerFunc: (event: { messages: NFCTagData[] }) => void
-  ): Promise<PluginListenerHandle>;
-
+  addListener(eventName: 'nfcTagDetected', listenerFunc: (event: {
+    messages: NFCTagData[];
+  }) => void): Promise<PluginListenerHandle>;
   /**
    * Add listener for NFC status events
    * @param eventName Name of the event to listen for
    * @param listenerFunc Callback function when event occurs
    */
-  addListener(
-    eventName: 'nfcStatus',
-    listenerFunc: (event: { status: string }) => void
-  ): Promise<PluginListenerHandle>;
+  addListener(eventName: 'nfcStatus', listenerFunc: (event: {
+    status: string;
+  }) => void): Promise<PluginListenerHandle>;
+  /**
+   * Add listener for NFC error events
+   * @param eventName Name of the event to listen for
+   * @param listenerFunc Callback function when event occurs
+   */
+  addListener(eventName: 'nfcError', listenerFunc: (event: {
+    error: string;
+  }) => void): Promise<PluginListenerHandle>;
+  /**
+   * Add listener for NFC read success events
+   * @param eventName Name of the event to listen for
+   * @param listenerFunc Callback function when event occurs
+   */
+  addListener(eventName: 'readSuccess', listenerFunc: (event: {
+    data: string;
+  }) => void): Promise<PluginListenerHandle>;
+  /**
+   * Add listener for NFC write success events
+   * @param eventName Name of the event to listen for
+   * @param listenerFunc Callback function when event occurs
+   */
+  addListener(eventName: 'writeSuccess', listenerFunc: (event: {
+    data: string;
+  }) => void): Promise<PluginListenerHandle>;
+  /**
+   * Add listener for NFC write error events
+   * @param eventName Name of the event to listen for
+   * @param listenerFunc Callback function when event occurs
+   */
+  addListener(eventName: 'writeError', listenerFunc: (event: {
+    error: string;
+  }) => void): Promise<PluginListenerHandle>;
 
   /**
    * Get technical details about an NFC tag
