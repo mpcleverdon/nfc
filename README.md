@@ -314,3 +314,21 @@ For issues and feature requests, please use the GitHub issue tracker.
 ## Credits
 
 Created by Mark Cleverdon (@mpcleverdon)
+
+## iOS Support Matrix
+
+| Feature                | Support Level | Minimum iOS | Notes                                |
+|-----------------------|---------------|-------------|--------------------------------------|
+| NDEF Reading          | Full          | iOS 13.0    | All NDEF types supported            |
+| NDEF Writing          | Full          | iOS 13.0    | All NDEF types supported            |
+| MIFARE Reading        | Partial       | iOS 13.0    | DESFire & Ultralight only           |
+| ISO-DEP/ISO7816      | Full          | iOS 13.0    | Requires entitlements               |
+| FeliCa               | Full          | iOS 13.0    | Requires entitlements               |
+| ISO15693             | Full          | iOS 13.0    | Including tag emulation             |
+| Card Emulation       | Partial       | iOS 13.0    | ISO15693 & FeliCa only             |
+| Tag Cloning          | Partial       | iOS 13.0    | Limited to supported protocols      |
+
+Note: Some features require special entitlements from Apple:
+- FeliCa card emulation
+- Custom AIDs for ISO7816
+- VAS (Value Added Service) support

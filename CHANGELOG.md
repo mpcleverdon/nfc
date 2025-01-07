@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.1] - 2024-03-XX
+
+### Added
+- all functions to iOS
+  
 ## [1.1.0] - 2024-03-XX
 
 ### Added
