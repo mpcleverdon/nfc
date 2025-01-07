@@ -662,9 +662,32 @@ public class NfcPlugin extends Plugin {
         if (ultralight != null) {
             ultralight.connect();
             try {
+                // Read all pages (typically 16 pages of 4 bytes each for Ultralight)
+                StringBuilder data = new StringBuilder();
+                for (int i = 0; i < 16; i++) {
+                    byte[] page = ultralight.readPages(i);
+                    data.append(bytesToHexString(page));
+                }
+                
                 tagInfo.put("type", "MIFARE_ULTRALIGHT");
-                tagInfo.put("type", ultralight.getType());
-                tagInfo.put("maxTransceiveLength", ultralight.getMaxTransceiveLength());
+                tagInfo.put("data", data.toString());
+                tagInfo.put("size", ultralight.getMaxTransceiveLength());
+                
+                // If it has NDEF, read that too
+                Ndef ndef = Ndef.get(tag);
+                if (ndef != null) {
+                    ndef.connect();
+                    try {
+                        NdefMessage ndefMessage = ndef.getNdefMessage();
+                        if (ndefMessage != null) {
+                            tagInfo.put("ndefMessage", ndefMessageToJson(ndefMessage));
+                        }
+                    } finally {
+                        ndef.close();
+                    }
+                }
+                
+                notifyListeners("readSuccess", tagInfo);
             } finally {
                 ultralight.close();
             }
@@ -950,5 +973,58 @@ public class NfcPlugin extends Plugin {
         
         NfcHostCardEmulatorService.setEmulationMode("NDEF");
         NfcHostCardEmulatorService.setCardData(null, data);
+    }
+
+    // Add emulation support for Ultralight
+    private void emulateMifareUltralight(JSObject originalData) {
+        String data = originalData.getString("data", "");
+        String ndefMessage = originalData.getString("ndefMessage", "");
+        
+        NfcHostCardEmulatorService.setEmulationMode("MIFARE_ULTRALIGHT");
+        NfcHostCardEmulatorService.setCardData(null, data);
+        if (!ndefMessage.isEmpty()) {
+            NfcHostCardEmulatorService.setNdefMessage(ndefMessage);
+        }
+    }
+
+    private JSObject ndefMessageToJson(NdefMessage ndefMessage) {
+        JSObject messageJson = new JSObject();
+        JSArray recordsArray = new JSArray();
+        
+        for (NdefRecord record : ndefMessage.getRecords()) {
+            JSObject recordJson = new JSObject();
+            
+            // Get TNF
+            recordJson.put("tnf", record.getTnf());
+            
+            // Get type
+            String type = new String(record.getType(), StandardCharsets.UTF_8);
+            recordJson.put("type", type);
+            
+            // Get identifier
+            byte[] id = record.getId();
+            if (id.length > 0) {
+                recordJson.put("id", bytesToHexString(id));
+            }
+            
+            // Get payload
+            byte[] payload = record.getPayload();
+            if (payload.length > 0) {
+                // For Text records, skip language code length byte
+                if (type.equals("T")) {
+                    int languageCodeLength = payload[0] & 0x3F;
+                    String textContent = new String(payload, languageCodeLength + 1, 
+                        payload.length - languageCodeLength - 1, StandardCharsets.UTF_8);
+                    recordJson.put("payload", textContent);
+                } else {
+                    recordJson.put("payload", bytesToHexString(payload));
+                }
+            }
+            
+            recordsArray.put(recordJson);
+        }
+        
+        messageJson.put("records", recordsArray);
+        return messageJson;
     }
 }

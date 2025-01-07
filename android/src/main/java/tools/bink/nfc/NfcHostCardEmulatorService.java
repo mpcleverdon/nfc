@@ -19,6 +19,7 @@ public class NfcHostCardEmulatorService extends HostApduService {
     private static String cardId = null;
     private static String cardData = "";
     private static String currentAID = "F0010203040506";
+    private static String ndefMessage = null;
     
     public static void setEmulationMode(String mode) {
         emulationMode = mode;
@@ -36,6 +37,14 @@ public class NfcHostCardEmulatorService extends HostApduService {
     public static void setMessageToShare(String message) {
         cardData = message;
         emulationMode = "NDEF";
+    }
+
+    public static void setNdefMessage(String message) {
+        ndefMessage = message;
+    }
+
+    public static String getNdefMessage() {
+        return ndefMessage;
     }
 
     @Override
@@ -86,6 +95,31 @@ public class NfcHostCardEmulatorService extends HostApduService {
             System.arraycopy(dataBytes, 0, response, 0, dataBytes.length);
             response[dataBytes.length] = (byte)0x90;
             response[dataBytes.length + 1] = (byte)0x00;
+            return response;
+        }
+        return UNKNOWN_CMD;
+    }
+
+    private byte[] processMifareUltralight(byte[] commandApdu) {
+        if (commandApdu[0] == (byte)0x30) {
+            // Handle anticollision
+            return hexStringToByteArray("0400" + cardId);
+        } else if (commandApdu[0] == (byte)0x60) {
+            // Handle read command
+            int page = commandApdu[1] & 0xFF;
+            byte[] data = hexStringToByteArray(cardData);
+            
+            // If this is a request for NDEF data and we have NDEF message
+            if (page == 4 && ndefMessage != null) {
+                byte[] ndefData = ndefMessage.getBytes(StandardCharsets.UTF_8);
+                byte[] response = new byte[16]; // 4 pages of 4 bytes each
+                System.arraycopy(ndefData, 0, response, 0, Math.min(16, ndefData.length));
+                return response;
+            }
+            
+            // Normal data read
+            byte[] response = new byte[16]; // 4 pages of 4 bytes each
+            System.arraycopy(data, page * 4, response, 0, Math.min(16, data.length - page * 4));
             return response;
         }
         return UNKNOWN_CMD;
