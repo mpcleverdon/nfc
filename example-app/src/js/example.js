@@ -199,7 +199,7 @@ function createTestUI() {
     // Log Section
     logDiv.id = 'logSection';
     logDiv.innerHTML = '<h3>Event Log</h3>';
-    container.appendChild(logDiv);
+    document.body.appendChild(logDiv);
     
     // Add clear log button
     const clearLogButton = createButton('Clear Log', () => {
@@ -302,17 +302,24 @@ function log(...args) {
     console.log(`[${timestamp}]`, ...args);
     
     // UI logging
+    const logSection = document.getElementById('logSection');
+    if (!logSection) {
+        console.error('Log section not found!');
+        return;
+    }
+
     const logEntry = document.createElement('div');
     logEntry.className = 'log-entry';
     logEntry.innerHTML = `
         <span class="timestamp">${timestamp}</span>
         <pre class="log-message">${message}</pre>
     `;
-    logDiv.insertBefore(logEntry, logDiv.firstChild);
+    logSection.insertBefore(logEntry, logSection.firstChild);
     
     // Keep only last 100 entries to prevent memory issues
-    while (logDiv.children.length > 100) {
-        logDiv.removeChild(logDiv.lastChild);
+    const entries = logSection.getElementsByClassName('log-entry');
+    while (entries.length > 100) {
+        logSection.removeChild(entries[entries.length - 1]);
     }
 }
 
@@ -342,7 +349,7 @@ function logError(...args) {
         <span class="timestamp">${timestamp}</span>
         <pre class="log-message error">${message}</pre>
     `;
-    logDiv.insertBefore(logEntry, logDiv.firstChild);
+    logSection.insertBefore(logEntry, logSection.firstChild);
 }
 
 async function setupEventListeners() {
@@ -491,3 +498,12 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM Content Loaded');
     initializeNfcTest();
 });
+
+// Add a test log to verify it's working
+window.addEventListener('DOMContentLoaded', () => {
+    log('App initialized');
+});
+
+// Make log functions globally available
+window.log = log;
+window.logError = logError;

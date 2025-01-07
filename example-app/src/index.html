@@ -61,6 +61,14 @@
             max-height: 500px;
             overflow-y: auto;
             font-family: monospace;
+            display: block !important;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            margin: 0;
+            height: 40vh;
         }
         
         .log-entry {
@@ -68,6 +76,8 @@
             padding: 8px;
             border-bottom: 1px solid #333;
             color: #fff;
+            word-wrap: break-word;
+            white-space: pre-wrap;
         }
         
         .log-entry.error {
@@ -102,10 +112,10 @@
         
         /* Make the log section sticky */
         .controls-section {
-            position: sticky;
-            top: 0;
+            margin-bottom: 45vh;
+            position: relative;
+            z-index: 1;
             background: white;
-            z-index: 100;
             padding: 10px 0;
         }
     </style>
