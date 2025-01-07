@@ -56,36 +56,40 @@
         #logSection {
             margin-top: 20px;
             padding: 15px;
-            background-color: #f8f9fa;
+            background-color: #1e1e1e;
             border-radius: 4px;
-            max-height: 400px;
+            max-height: 500px;
             overflow-y: auto;
+            font-family: monospace;
         }
         
         .log-entry {
             margin: 5px 0;
-            padding: 5px;
-            border-bottom: 1px solid #eee;
+            padding: 8px;
+            border-bottom: 1px solid #333;
+            color: #fff;
         }
         
         .log-entry.error {
-            background-color: #fff5f5;
-            border-left: 3px solid #dc3545;
+            background-color: #2b1212;
+            border-left: 3px solid #ff4444;
         }
         
         .timestamp {
-            color: #666;
-            font-size: 0.8em;
+            color: #888;
+            font-size: 0.9em;
+            margin-right: 10px;
         }
         
         .log-message {
             margin: 5px 0;
             white-space: pre-wrap;
             word-wrap: break-word;
+            color: #4CAF50;
         }
         
         .log-message.error {
-            color: #dc3545;
+            color: #ff4444;
         }
         
         pre {
@@ -94,6 +98,15 @@
             overflow-x: auto;
             margin: 5px 0;
             border-radius: 4px;
+        }
+        
+        /* Make the log section sticky */
+        .controls-section {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 100;
+            padding: 10px 0;
         }
     </style>
 </head>

@@ -16,6 +16,9 @@ import android.os.Bundle;
 import android.util.Log;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Date;
+import java.text.SimpleDateFormat;
+import java.util.TimeZone;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.JSArray;
@@ -53,13 +56,15 @@ public class NfcPlugin extends Plugin {
         String aid;
         boolean secure;
         int timeout;
+        JSObject originalData;
 
-        WriteParameters(String text, String cardType, String aid, boolean secure, int timeout) {
+        WriteParameters(String text, String cardType, String aid, boolean secure, int timeout, JSObject originalData) {
             this.text = text;
             this.cardType = cardType;
             this.aid = aid;
             this.secure = secure;
             this.timeout = timeout;
+            this.originalData = originalData;
         }
     }
 
@@ -187,12 +192,41 @@ public class NfcPlugin extends Plugin {
         String mode = call.getString("mode", "reader"); // "reader" or "emulator"
 
         if ("emulator".equals(mode)) {
-            // Set up as card emulator
-            NfcHostCardEmulatorService.setMessageToShare(text);
-            JSObject result = new JSObject();
-            result.put("success", true);
-            result.put("message", "Device ready to share data via NFC");
-            call.resolve(result);
+            JSObject originalData = call.getObject("originalData");
+            if (originalData != null) {
+                // Set up card emulation with original card data
+                try {
+                    String cardType = originalData.getString("type", "UNKNOWN");
+                    switch (cardType) {
+                        case "MIFARE_CLASSIC":
+                            emulateMifareClassic(originalData);
+                            break;
+                        case "ISO_DEP":
+                            emulateIsoDep(originalData);
+                            break;
+                        case "NDEF":
+                            emulateNdef(originalData);
+                            break;
+                        default:
+                            call.reject("Unsupported card type for cloning: " + cardType);
+                            return;
+                    }
+                    
+                    JSObject result = new JSObject();
+                    result.put("success", true);
+                    result.put("message", "Device ready to emulate " + cardType);
+                    call.resolve(result);
+                } catch (Exception e) {
+                    call.reject("Failed to set up card emulation: " + e.getMessage());
+                }
+            } else {
+                // Normal emulation mode
+                NfcHostCardEmulatorService.setMessageToShare(text);
+                JSObject result = new JSObject();
+                result.put("success", true);
+                result.put("message", "Device ready to share data via NFC");
+                call.resolve(result);
+            }
         } else {
             // Normal reader mode
             String cardType = call.getString("cardType", "auto");
@@ -200,7 +234,7 @@ public class NfcPlugin extends Plugin {
             boolean secure = call.getBoolean("secure", false);
             int timeout = call.getInt("timeout", 5000);
 
-            this.writeParams = new WriteParameters(text, cardType, aid, secure, timeout);
+            this.writeParams = new WriteParameters(text, cardType, aid, secure, timeout, null);
             savedCallId = call.getCallbackId();
             
             try {
@@ -221,36 +255,93 @@ public class NfcPlugin extends Plugin {
         super.handleOnNewIntent(intent);
         
         String action = intent.getAction();
+        Log.d(TAG, "New intent received with action: " + action);
+        
+        // Send action info to UI
+        JSObject actionInfo = new JSObject();
+        actionInfo.put("action", action);
+        notifyListeners("nfcStatus", actionInfo);
+        
         if (NfcAdapter.ACTION_TAG_DISCOVERED.equals(action) ||
             NfcAdapter.ACTION_TECH_DISCOVERED.equals(action) ||
             NfcAdapter.ACTION_NDEF_DISCOVERED.equals(action)) {
             
             Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
             if (tag != null) {
-                if (writeParams != null) {
-                    writeNdefMessage(tag, writeParams);
-                    writeParams = null;
-                } else if (savedCallId != null) {
-                    // This is a read operation
-                    try {
-                        JSObject result = readTag(tag);
-                        PluginCall savedCall = bridge.getSavedCall(savedCallId);
-                        if (savedCall != null) {
-                            savedCall.resolve(result);
-                            bridge.releaseCall(savedCallId);
-                        }
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error reading tag", e);
-                        PluginCall savedCall = bridge.getSavedCall(savedCallId);
-                        if (savedCall != null) {
-                            savedCall.reject("Error reading tag: " + e.getMessage());
-                            bridge.releaseCall(savedCallId);
+                try {
+                    // Create detailed tag info
+                    JSObject tagInfo = new JSObject();
+                    tagInfo.put("id", bytesToHexString(tag.getId()));
+                    
+                    // Get tech list
+                    String[] techList = tag.getTechList();
+                    JSArray techArray = new JSArray();
+                    for (String tech : techList) {
+                        techArray.put(tech.replace("android.nfc.tech.", ""));
+                    }
+                    tagInfo.put("techTypes", techArray);
+                    
+                    // Add more tag details
+                    tagInfo.put("type", determineTagType(techList));
+                    tagInfo.put("timestamp", getISOTimestamp());
+                    
+                    // Send tag info to UI
+                    notifyListeners("nfcTagDetected", tagInfo);
+                    
+                    // Process the tag based on write/read mode
+                    if (writeParams != null) {
+                        writeNdefMessage(tag, writeParams);
+                        writeParams = null;
+                    } else if (savedCallId != null) {
+                        // This is a read operation
+                        try {
+                            JSObject result = readTag(tag);
+                            result.put("timestamp", getISOTimestamp());
+                            notifyListeners("readSuccess", result);
+                            
+                            PluginCall savedCall = bridge.getSavedCall(savedCallId);
+                            if (savedCall != null) {
+                                savedCall.resolve(result);
+                                bridge.releaseCall(savedCallId);
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error reading tag", e);
+                            JSObject error = new JSObject();
+                            error.put("error", e.getMessage());
+                            error.put("timestamp", getISOTimestamp());
+                            notifyListeners("nfcError", error);
+                            
+                            PluginCall savedCall = bridge.getSavedCall(savedCallId);
+                            if (savedCall != null) {
+                                savedCall.reject("Error reading tag: " + e.getMessage());
+                                bridge.releaseCall(savedCallId);
+                            }
                         }
                     }
+                    savedCallId = null;
+                } catch (Exception e) {
+                    Log.e(TAG, "Error processing tag", e);
+                    JSObject error = new JSObject();
+                    error.put("error", e.getMessage());
+                    error.put("timestamp", getISOTimestamp());
+                    notifyListeners("nfcError", error);
                 }
-                savedCallId = null;
             }
         }
+    }
+
+    private String determineTagType(String[] techList) {
+        List<String> techs = Arrays.asList(techList);
+        if (techs.contains("android.nfc.tech.IsoDep")) return "ISO_DEP";
+        if (techs.contains("android.nfc.tech.NfcA")) return "NFC_A";
+        if (techs.contains("android.nfc.tech.NfcB")) return "NFC_B";
+        if (techs.contains("android.nfc.tech.NfcF")) return "NFC_F";
+        if (techs.contains("android.nfc.tech.NfcV")) return "NFC_V";
+        if (techs.contains("android.nfc.tech.Ndef")) return "NDEF";
+        if (techs.contains("android.nfc.tech.NdefFormatable")) return "NDEF_FORMATABLE";
+        if (techs.contains("android.nfc.tech.MifareClassic")) return "MIFARE_CLASSIC";
+        if (techs.contains("android.nfc.tech.MifareUltralight")) return "MIFARE_ULTRALIGHT";
+        return "UNKNOWN";
     }
 
     @Override
@@ -826,5 +917,38 @@ public class NfcPlugin extends Plugin {
 
         // Add support for other tag types as needed
         throw new Exception("Unsupported tag type");
+    }
+
+    private String getISOTimestamp() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return sdf.format(new Date());
+    }
+
+    private void emulateMifareClassic(JSObject originalData) {
+        // Set up MIFARE Classic emulation
+        String id = originalData.getString("id", "");
+        String data = originalData.getString("data", "");
+        
+        NfcHostCardEmulatorService.setEmulationMode("MIFARE_CLASSIC");
+        NfcHostCardEmulatorService.setCardData(id, data);
+    }
+
+    private void emulateIsoDep(JSObject originalData) {
+        // Set up ISO-DEP emulation
+        String aid = originalData.getString("aid", "F0010203040506");
+        String data = originalData.getString("data", "");
+        
+        NfcHostCardEmulatorService.setEmulationMode("ISO_DEP");
+        NfcHostCardEmulatorService.setAID(aid);
+        NfcHostCardEmulatorService.setCardData(null, data);
+    }
+
+    private void emulateNdef(JSObject originalData) {
+        // Set up NDEF emulation
+        String data = originalData.getString("data", "");
+        
+        NfcHostCardEmulatorService.setEmulationMode("NDEF");
+        NfcHostCardEmulatorService.setCardData(null, data);
     }
 }

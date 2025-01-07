@@ -136,7 +136,7 @@ function createTestUI() {
         <option value="reader">Reader Mode</option>
         <option value="emulator">Card Emulator Mode</option>
         <option value="read">Read Only Mode</option>
-    `;
+        <option value="clone">Clone Card Mode</option>`;
 
     basicControls.appendChild(modeSelect);
     basicControls.appendChild(createButton('Write/Share/Read', async () => {
@@ -201,29 +201,77 @@ function createTestUI() {
     logDiv.innerHTML = '<h3>Event Log</h3>';
     container.appendChild(logDiv);
     
+    // Add clear log button
+    const clearLogButton = createButton('Clear Log', () => {
+        logDiv.innerHTML = '<h3>Event Log</h3>';
+        log('Log cleared');
+    });
+    clearLogButton.style.backgroundColor = '#dc3545';
+    controlsDiv.appendChild(clearLogButton);
+    
+    // Add clone card button
+    basicControls.appendChild(createButton('Clone Card', async () => {
+        try {
+            // First read the original card
+            const originalCard = await Nfc.read();
+            log('Original Card Data:', originalCard);
+            
+            if (!originalCard || !originalCard.type) {
+                throw new Error('Could not determine card type');
+            }
+            
+            // Store card data for emulation
+            await Nfc.write({
+                mode: 'emulator',
+                cardType: originalCard.type,
+                aid: originalCard.aid || "F0010203040506",
+                originalData: {
+                    type: originalCard.type,
+                    data: originalCard.data,
+                    techTypes: originalCard.techTypes,
+                    id: originalCard.id
+                }
+            });
+            
+            log('Ready to emulate card. Touch another device to clone.');
+        } catch (error) {
+            logError('Clone Error:', error);
+        }
+    }));
+    
     return container;
 }
 
 function log(...args) {
+    const timestamp = new Date().toISOString();
     const message = args.map(arg => 
         typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg
     ).join(' ');
     
+    // Console logging
+    console.log(`[${timestamp}]`, ...args);
+    
+    // UI logging
     const logEntry = document.createElement('div');
     logEntry.className = 'log-entry';
     logEntry.innerHTML = `
-        <span class="timestamp">${new Date().toLocaleTimeString()}</span>
+        <span class="timestamp">${timestamp}</span>
         <pre class="log-message">${message}</pre>
     `;
     logDiv.insertBefore(logEntry, logDiv.firstChild);
-    console.log(...args);
+    
+    // Keep only last 100 entries to prevent memory issues
+    while (logDiv.children.length > 100) {
+        logDiv.removeChild(logDiv.lastChild);
+    }
 }
 
 function logError(...args) {
-    const logEntry = document.createElement('div');
-    logEntry.className = 'log-entry error';
+    const timestamp = new Date().toISOString();
     const message = args.map(arg => {
-        if (arg instanceof Error) return arg.message;
+        if (arg instanceof Error) {
+            return `${arg.message}\n${arg.stack}`;
+        }
         if (typeof arg === 'object') {
             try {
                 return JSON.stringify(arg, null, 2);
@@ -234,12 +282,17 @@ function logError(...args) {
         return String(arg);
     }).join(' ');
     
+    // Console logging
+    console.error(`[${timestamp}] ERROR:`, ...args);
+    
+    // UI logging
+    const logEntry = document.createElement('div');
+    logEntry.className = 'log-entry error';
     logEntry.innerHTML = `
-        <span class="timestamp">${new Date().toLocaleTimeString()}</span>
+        <span class="timestamp">${timestamp}</span>
         <pre class="log-message error">${message}</pre>
     `;
     logDiv.insertBefore(logEntry, logDiv.firstChild);
-    console.error(...args);
 }
 
 async function setupEventListeners() {
@@ -250,20 +303,31 @@ async function setupEventListeners() {
         
         // Set up NFC event listeners
         Nfc.addListener('nfcTagDetected', (event) => {
-            log('Tag Detected:', event);
+            log('Tag Detected:', {
+                timestamp: new Date().toISOString(),
+                ...event
+            });
         });
 
         Nfc.addListener('nfcStatus', (event) => {
-            log('NFC Status:', event);
-            statusDiv.innerHTML = `Status: ${event.status}`;
+            log('NFC Status Changed:', {
+                timestamp: new Date().toISOString(),
+                ...event
+            });
         });
 
         Nfc.addListener('writeSuccess', (event) => {
-            log('Write Success:', event);
+            log('Write Success:', {
+                timestamp: new Date().toISOString(),
+                ...event
+            });
         });
 
         Nfc.addListener('writeError', (event) => {
-            logError('Write Error:', event);
+            logError('Write Error:', {
+                timestamp: new Date().toISOString(),
+                ...event
+            });
         });
 
         Nfc.addListener('nfcError', (event) => {
@@ -271,13 +335,10 @@ async function setupEventListeners() {
         });
 
         Nfc.addListener('readSuccess', (event) => {
-            log('Read Success:', event);
-            if (event.data) {
-                const dataDiv = document.createElement('div');
-                dataDiv.className = 'read-data';
-                dataDiv.innerHTML = `<strong>Read Data:</strong> ${event.data}`;
-                logDiv.insertBefore(dataDiv, logDiv.firstChild);
-            }
+            log('Read Success:', {
+                timestamp: new Date().toISOString(),
+                ...event
+            });
         });
 
         // Add WebRTC-specific listeners
@@ -328,6 +389,24 @@ async function setupEventListeners() {
             } catch (error) {
                 logError('Handle Answer Error:', error);
             }
+        });
+
+        // Add a general error listener
+        window.addEventListener('error', (event) => {
+            logError('Global Error:', {
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno,
+                error: event.error
+            });
+        });
+
+        // Add unhandled promise rejection listener
+        window.addEventListener('unhandledrejection', (event) => {
+            logError('Unhandled Promise Rejection:', {
+                reason: event.reason
+            });
         });
 
     } catch (error) {

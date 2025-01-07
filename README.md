@@ -1,3 +1,4 @@
+<!-- trunk-ignore-all(prettier) -->
 # Capacitor NFC Plugin
 
 ![npm version](https://img.shields.io/npm/v/capacitor-nfc-plugin)
@@ -28,6 +29,7 @@ console.log('Tag Info:', tagInfo);
 ### Reading Different Card Types
 
 1. NDEF Formatted Cards:
+
 ```typescript
 // Read NDEF data
 const result = await Nfc.read();
@@ -36,6 +38,7 @@ console.log('NDEF Data:', result.records);
 ```
 
 2. MIFARE Classic Cards:
+
 ```typescript
 // Read MIFARE Classic card
 const tagInfo = await Nfc.getTagInfo();
@@ -51,6 +54,7 @@ if (tagInfo.type === 'MIFARE_CLASSIC') {
 ```
 
 3. ISO-DEP Cards (Banking cards, ID cards):
+
 ```typescript
 // Read ISO-DEP card with specific AID
 await Nfc.write({
@@ -70,6 +74,7 @@ Nfc.addListener('readSuccess', (event) => {
 ### Example Response Data
 
 1. MIFARE Classic Response:
+
 ```json
 {
     "type": "MIFARE_CLASSIC",
@@ -82,6 +87,7 @@ Nfc.addListener('readSuccess', (event) => {
 ```
 
 2. ISO-DEP Response:
+
 ```json
 {
     "type": "ISO_DEP",
@@ -92,6 +98,7 @@ Nfc.addListener('readSuccess', (event) => {
 ```
 
 3. NDEF Message Response:
+
 ```json
 {
     "type": "NDEF",
@@ -115,6 +122,10 @@ Nfc.addListener('readSuccess', (event) => {
 * [`write(...)`](#write)
 * [`addListener('nfcTagDetected', ...)`](#addlistenernfctagdetected-)
 * [`addListener('nfcStatus', ...)`](#addlistenernfcstatus-)
+* [`addListener('nfcError', ...)`](#addlistenernfcerror-)
+* [`addListener('readSuccess', ...)`](#addlistenerreadsuccess-)
+* [`addListener('writeSuccess', ...)`](#addlistenerwritesuccess-)
+* [`addListener('writeError', ...)`](#addlistenerwriteerror-)
 * [`getTagInfo()`](#gettaginfo)
 * [`read()`](#read)
 * [Interfaces](#interfaces)
@@ -144,18 +155,22 @@ echo(options: { value: string; }) => Promise<{ value: string; }>
 
 #### `isEnabled()`
 Check if NFC is available and enabled.
+
 - Returns: `Promise<{ enabled: boolean }>`
 
 #### `startScanning()`
 Start listening for NFC tags.
+
 - Returns: `Promise<void>`
 
 #### `stopScanning()`
 Stop listening for NFC tags.
+
 - Returns: `Promise<void>`
 
 #### `write(options: WriteOptions)`
 Write data to an NFC tag or share data via HCE.
+
 - Parameters:
   ```typescript
   interface WriteOptions {
@@ -172,41 +187,50 @@ Write data to an NFC tag or share data via HCE.
 
 #### `getTagInfo()`
 Get technical details about a detected NFC tag.
+
 - Returns: `Promise<NFCTagInfo>`
 
 ### Events
 
 #### `nfcTagDetected`
 Emitted when an NFC tag is detected.
+
 - Data: `{ messages: NFCTagData[] }`
 
 #### `nfcStatus`
 Emitted when NFC status changes.
+
 - Data: `{ status: string }`
 
 #### `writeSuccess`
 Emitted when data is successfully written.
+
 - Data: `{ written: boolean, type: string, message: string }`
 
 #### `writeError`
 Emitted when a write operation fails.
+
 - Data: `{ error: string }`
 
 #### `readSuccess`
 Emitted when data is successfully read.
+
 - Data: `{ type: string, data: string }`
 
 #### `webrtcOffer`
 Emitted when a WebRTC offer is received.
+
 - Data: `WebRTCConnectionEvent`
 
 #### `webrtcAnswer`
 Emitted when a WebRTC answer is received.
+
 - Data: `WebRTCConnectionEvent`
 
 ## Supported Tag Types
 
 ### Android
+
 - NDEF formatted tags
 - ISO-DEP (ISO 14443-4)
 - MIFARE Classic*
@@ -215,6 +239,7 @@ Emitted when a WebRTC answer is received.
 - ISO 7816
 
 ### iOS
+
 - NDEF formatted tags
 - ISO 7816 (ISO-DEP)
 - ISO 15693
@@ -224,6 +249,7 @@ Emitted when a WebRTC answer is received.
 - VAS (Value Added Service)
 
 *Note: 
+
 - MIFARE Classic support varies by device manufacturer on Android
 - iOS 13+ required for tag reading
 - iOS 14+ required for Value Added Service (VAS) tags
@@ -236,6 +262,7 @@ Emitted when a WebRTC answer is received.
    - Click "+" and add "Near Field Communication Tag Reading"
 
 2. Add required entries to Info.plist:
+
 ```xml
 <!-- Basic NFC reading -->
 <key>NFCReaderUsageDescription</key>
@@ -260,12 +287,14 @@ Emitted when a WebRTC answer is received.
 ```
 
 3. Required Entitlements:
+
 - com.apple.developer.nfc.readersession
 - com.apple.developer.nfc.readersession.formats
 - com.apple.developer.nfc.readersession.iso7816.select-identifiers (for ISO7816)
 - com.apple.developer.nfc.readersession.vpay (for VAS)
 
 4. Minimum iOS Version Requirements:
+
 - iOS 13+: Basic NFC tag reading
 - iOS 14+: VAS support
 - iOS 15+: Enhanced security features

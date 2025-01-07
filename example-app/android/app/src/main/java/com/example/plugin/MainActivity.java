@@ -6,6 +6,8 @@ import android.nfc.NfcAdapter;
 import android.os.Bundle;
 import android.util.Log;
 import com.getcapacitor.BridgeActivity;
+import android.nfc.Tag;
+import java.util.Arrays;
 
 public class MainActivity extends BridgeActivity {
     private static final String TAG = "NfcPlugin";
@@ -51,8 +53,30 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onNewIntent(Intent intent) {
+        String action = intent.getAction();
+        Log.d(TAG, "New intent received with action: " + action);
+        
+        if (NfcAdapter.ACTION_TAG_DISCOVERED.equals(action) ||
+            NfcAdapter.ACTION_TECH_DISCOVERED.equals(action) ||
+            NfcAdapter.ACTION_NDEF_DISCOVERED.equals(action)) {
+            
+            Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+            if (tag != null) {
+                String[] techList = tag.getTechList();
+                Log.d(TAG, "Tag technologies: " + Arrays.toString(techList));
+                Log.d(TAG, "Tag ID: " + bytesToHex(tag.getId()));
+            }
+        }
+        
         super.onNewIntent(intent);
-        Log.d(TAG, "New intent received: " + intent.getAction());
         setIntent(intent);
+    }
+
+    private String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
     }
 }

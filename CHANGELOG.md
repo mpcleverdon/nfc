@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.1.0] - 2024-03-XX
+
+### Added
+- Card cloning feature for supported card types
+- Enhanced logging system with timestamps
+- Support for MIFARE Classic emulation
+- Support for ISO-DEP emulation
+- Improved error handling and reporting
+- Better UI feedback in example app
+
+### Changed
+- Improved NFC card type detection
+- Enhanced HCE service with multiple card type support
+- Better documentation for card cloning features
+
 ## [1.0.2] - 2024-03-XX
 
 ### Added
