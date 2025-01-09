@@ -8,6 +8,7 @@ import android.util.Log;
 import com.getcapacitor.BridgeActivity;
 import android.nfc.Tag;
 import java.util.Arrays;
+import android.content.IntentFilter;
 
 public class MainActivity extends BridgeActivity {
     private static final String TAG = "NfcPlugin";
@@ -39,7 +40,15 @@ public class MainActivity extends BridgeActivity {
     public void onResume() {
         super.onResume();
         if (nfcAdapter != null) {
-            nfcAdapter.enableForegroundDispatch(this, pendingIntent, null, null);
+            // Enable foreground dispatch with high priority
+            IntentFilter tagDetected = new IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED);
+            IntentFilter[] writeTagFilters = new IntentFilter[] {tagDetected};
+            nfcAdapter.enableForegroundDispatch(
+                this, 
+                getPendingIntent(), 
+                writeTagFilters, 
+                null
+            );
         }
     }
 
@@ -78,5 +87,16 @@ public class MainActivity extends BridgeActivity {
             sb.append(String.format("%02x", b));
         }
         return sb.toString();
+    }
+
+    private PendingIntent getPendingIntent() {
+        Intent intent = new Intent(this, getClass());
+        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        return PendingIntent.getActivity(
+            this, 
+            0, 
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE
+        );
     }
 }

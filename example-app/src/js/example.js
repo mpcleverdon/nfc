@@ -466,6 +466,17 @@ async function setupEventListeners() {
             });
         });
 
+        // Add these listeners after initializing NFC
+        Nfc.addListener('nfcTagDetected', (tag) => {
+            console.log('NFC Tag Detected:', tag);
+            log(`Tag Detected: ID ${tag.tagId}\nTechnologies: ${tag.techList}`);
+        });
+
+        Nfc.addListener('nfcError', (error) => {
+            console.error('NFC Error:', error);
+            logError('NFC Error:', error);
+        });
+
     } catch (error) {
         logError('Initialization Error:', error);
     }
@@ -493,10 +504,21 @@ export function initializeNfcTest() {
     }
 }
 
+// Add this function
+async function startNfcScanning() {
+    try {
+        await Nfc.startScanning();
+        console.log('NFC scanning started');
+    } catch (error) {
+        console.error('Failed to start NFC scanning:', error);
+    }
+}
+
 // Update the initialization
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM Content Loaded');
     initializeNfcTest();
+    startNfcScanning(); // Start scanning after initialization
 });
 
 // Add a test log to verify it's working

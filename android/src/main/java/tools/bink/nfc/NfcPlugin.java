@@ -108,48 +108,42 @@ public class NfcPlugin extends Plugin {
 
     @PluginMethod
     public void startScanning(PluginCall call) {
-        if (!hasRequiredPermissions()) {
-            requestPermissions(call);
-            return;
-        }
-
-        if (nfcAdapter == null) {
-            call.reject("NFC is not available on this device");
-            return;
-        }
-
-        if (!nfcAdapter.isEnabled()) {
-            call.reject("NFC is disabled. Please enable NFC in your device settings.");
-            return;
-        }
-
-        Activity activity = getActivity();
-        if (activity == null) {
-            call.reject("Activity not available");
-            return;
-        }
-
+        Log.d(TAG, "Starting NFC scan...");
         try {
-            if (isScanning) {
-                call.reject("NFC scanning is already in progress");
+            if (nfcAdapter == null) {
+                call.reject("NFC is not available on this device");
                 return;
             }
 
-            // Set up NDEF discovery
-            IntentFilter[] intentFiltersArray = new IntentFilter[] {
-                new IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED),
-                new IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED),
-                new IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED)
-            };
+            if (!nfcAdapter.isEnabled()) {
+                call.reject("NFC is not enabled");
+                return;
+            }
 
-            String[][] techListsArray = new String[][] {
-                new String[] { Ndef.class.getName() }
-            };
-
-            nfcAdapter.enableForegroundDispatch(activity, pendingIntent, intentFiltersArray, techListsArray);
-            isScanning = true;
+            // Enable reader mode with all available technologies
+            Bundle options = new Bundle();
+            nfcAdapter.enableReaderMode(getActivity(),
+                tag -> {
+                    Log.d(TAG, "Tag discovered: " + tag.toString());
+                    JSObject result = new JSObject();
+                    try {
+                        result.put("tagId", bytesToHex(tag.getId()));
+                        result.put("techList", Arrays.toString(tag.getTechList()));
+                        notifyListeners("nfcTagDetected", result);
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error processing tag: " + e.getMessage());
+                    }
+                },
+                NfcAdapter.FLAG_READER_NFC_A | 
+                NfcAdapter.FLAG_READER_NFC_B |
+                NfcAdapter.FLAG_READER_NFC_F |
+                NfcAdapter.FLAG_READER_NFC_V,
+                options
+            );
+            
             call.resolve();
         } catch (Exception e) {
+            Log.e(TAG, "Error starting NFC scan: " + e.getMessage());
             call.reject("Failed to start NFC scanning: " + e.getMessage());
         }
     }
@@ -1026,5 +1020,13 @@ public class NfcPlugin extends Plugin {
         
         messageJson.put("records", recordsArray);
         return messageJson;
+    }
+
+    private String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
     }
 }
