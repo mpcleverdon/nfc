@@ -120,14 +120,14 @@ Nfc.addListener('readSuccess', (event) => {
 * [`startScanning()`](#startscanning)
 * [`stopScanning()`](#stopscanning)
 * [`write(...)`](#write)
+* [`read()`](#read)
+* [`getTagInfo()`](#gettaginfo)
 * [`addListener('nfcTagDetected', ...)`](#addlistenernfctagdetected-)
 * [`addListener('nfcStatus', ...)`](#addlistenernfcstatus-)
 * [`addListener('nfcError', ...)`](#addlistenernfcerror-)
 * [`addListener('readSuccess', ...)`](#addlistenerreadsuccess-)
 * [`addListener('writeSuccess', ...)`](#addlistenerwritesuccess-)
 * [`addListener('writeError', ...)`](#addlistenerwriteerror-)
-* [`getTagInfo()`](#gettaginfo)
-* [`read()`](#read)
 * [Interfaces](#interfaces)
 
 </docgen-index>

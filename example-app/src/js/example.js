@@ -507,3 +507,31 @@ window.addEventListener('DOMContentLoaded', () => {
 // Make log functions globally available
 window.log = log;
 window.logError = logError;
+
+// Example from plugin
+const writeTag = async () => {
+  try {
+    await Nfc.startScanning();
+    const result = await Nfc.write({
+      text: 'Hello from Capacitor NFC Plugin!',
+      format: true // Format tag before writing
+    });
+    console.log('Write successful:', result);
+  } catch (err) {
+    console.error('Write failed:', err);
+  } finally {
+    await Nfc.stopScanning();
+  }
+};
+
+const readTag = async () => {
+  try {
+    await Nfc.startScanning();
+    const tag = await Nfc.read();
+    console.log('Tag data:', tag);
+  } catch (err) {
+    console.error('Read failed:', err);
+  } finally {
+    await Nfc.stopScanning();
+  }
+};

@@ -1,148 +1,230 @@
 import type { PluginListenerHandle } from '@capacitor/core';
 
-export interface NfcPlugin {
+/**
+ * @since 1.0.0
+ * @interface NFCPlugin
+ * @description Capacitor plugin for NFC operations including reading, writing, and card emulation.
+ * @category Native
+ */
+export interface NFCPlugin {
   /**
-   * Check if NFC is available and enabled on the device
+   * Check if NFC is available and enabled on the device.
+   * @since 1.0.0
    * @returns Promise with boolean indicating if NFC is enabled
+   * @example
+   * const { enabled } = await Nfc.isEnabled();
    */
   isEnabled(): Promise<{ enabled: boolean }>;
 
   /**
-   * Start listening for NFC tags
-   * @returns Promise that resolves when the listener is started
+   * Start scanning for NFC tags.
+   * @since 1.0.0
+   * @returns Promise that resolves when scanning starts
+   * @example
+   * await Nfc.startScanning();
    */
   startScanning(): Promise<void>;
 
   /**
-   * Stop listening for NFC tags
-   * @returns Promise that resolves when the listener is stopped
+   * Stop scanning for NFC tags.
+   * @returns Promise that resolves when scanning stops
    */
   stopScanning(): Promise<void>;
 
   /**
-   * Write data to an NFC tag
-   * @param options Data to write to the tag
-   * @returns Promise that resolves when data is written
+   * Write data to an NFC tag or share data via HCE.
+   * @param options WriteOptions object containing the data and configuration
+   * @returns Promise that resolves when write is complete
    */
-  write(options: { text: string }): Promise<void>;
+  write(options: WriteOptions): Promise<void>;
 
   /**
-   * Add listener for NFC events
-   * @param eventName Name of the event to listen for
-   * @param listenerFunc Callback function when event occurs
+   * Read data from an NFC tag.
+   * @returns Promise with the read data
    */
-  addListener(eventName: 'nfcTagDetected', listenerFunc: (event: {
-    messages: NFCTagData[];
-  }) => void): Promise<PluginListenerHandle>;
-  /**
-   * Add listener for NFC status events
-   * @param eventName Name of the event to listen for
-   * @param listenerFunc Callback function when event occurs
-   */
-  addListener(eventName: 'nfcStatus', listenerFunc: (event: {
-    status: string;
-  }) => void): Promise<PluginListenerHandle>;
-  /**
-   * Add listener for NFC error events
-   * @param eventName Name of the event to listen for
-   * @param listenerFunc Callback function when event occurs
-   */
-  addListener(eventName: 'nfcError', listenerFunc: (event: {
-    error: string;
-  }) => void): Promise<PluginListenerHandle>;
-  /**
-   * Add listener for NFC read success events
-   * @param eventName Name of the event to listen for
-   * @param listenerFunc Callback function when event occurs
-   */
-  addListener(eventName: 'readSuccess', listenerFunc: (event: {
-    data: string;
-  }) => void): Promise<PluginListenerHandle>;
-  /**
-   * Add listener for NFC write success events
-   * @param eventName Name of the event to listen for
-   * @param listenerFunc Callback function when event occurs
-   */
-  addListener(eventName: 'writeSuccess', listenerFunc: (event: {
-    data: string;
-  }) => void): Promise<PluginListenerHandle>;
-  /**
-   * Add listener for NFC write error events
-   * @param eventName Name of the event to listen for
-   * @param listenerFunc Callback function when event occurs
-   */
-  addListener(eventName: 'writeError', listenerFunc: (event: {
-    error: string;
-  }) => void): Promise<PluginListenerHandle>;
+  read(): Promise<{ data: string }>;
 
   /**
-   * Get technical details about an NFC tag
-   * @returns Promise with tag technology information
+   * Get detailed information about a detected NFC tag.
+   * @returns Promise with the tag information
    */
   getTagInfo(): Promise<NFCTagInfo>;
 
   /**
-   * Read data from an NFC tag
-   * @returns Promise that resolves with the read data
+   * Add listener for NFC tag detection.
+   * @param eventName - The name of the event to listen for
+   * @param listenerFunc - The listener function to call
+   * @returns Promise that resolves with the listener handle
    */
-  read(): Promise<NFCReadResult>;
-}
+  addListener(
+    eventName: 'nfcTagDetected',
+    listenerFunc: (tag: NFCTagInfo) => void
+  ): Promise<PluginListenerHandle>;
 
-export interface NFCTagInfo {
-  id: string;
-  techTypes: string[];
-  maxSize?: number;
-  isWritable?: boolean;
-  canMakeReadOnly?: boolean;
-  type?: string;
-  isFormatted?: boolean;
-}
+  /**
+   * Add listener for NFC status changes.
+   * @param eventName - The name of the event to listen for
+   * @param listenerFunc - The listener function to call
+   * @returns Promise that resolves with the listener handle
+   */
+  addListener(
+    eventName: 'nfcStatus',
+    listenerFunc: (status: { status: string }) => void
+  ): Promise<PluginListenerHandle>;
 
-export interface NFCTagData {
-  id?: string;
-  type?: string;
-  payload?: string;
-  records?: NFCRecord[];
-  techTypes?: string[];
-  maxSize?: number;
-  isWritable?: boolean;
-}
+  /**
+   * Add listener for NFC errors.
+   * @param eventName - The name of the event to listen for
+   * @param listenerFunc - The listener function to call
+   * @returns Promise that resolves with the listener handle
+   */
+  addListener(
+    eventName: 'nfcError',
+    listenerFunc: (error: { error: string }) => void
+  ): Promise<PluginListenerHandle>;
 
-export interface NFCRecord {
-  type: string;
-  payload: string;
-  identifier: string;
-}
+  /**
+   * Add listener for successful reads.
+   * @param eventName - The name of the event to listen for
+   * @param listenerFunc - The listener function to call
+   * @returns Promise that resolves with the listener handle
+   */
+  addListener(
+    eventName: 'readSuccess',
+    listenerFunc: (tag: NFCTagInfo) => void
+  ): Promise<PluginListenerHandle>;
 
-export interface WebRTCConnectionInfo {
-  type: 'offer' | 'answer';
-  sdp: string;
-  iceServers?: RTCIceServer[];
+  /**
+   * Add listener for successful writes.
+   * @param eventName - The name of the event to listen for
+   * @param listenerFunc - The listener function to call
+   * @returns Promise that resolves with the listener handle
+   */
+  addListener(
+    eventName: 'writeSuccess',
+    listenerFunc: (result: { written: boolean; type: string; message: string }) => void
+  ): Promise<PluginListenerHandle>;
+
+  /**
+   * Add listener for write errors.
+   * @param eventName - The name of the event to listen for
+   * @param listenerFunc - The listener function to call
+   * @returns Promise that resolves with the listener handle
+   */
+  addListener(
+    eventName: 'writeError',
+    listenerFunc: (error: { error: string }) => void
+  ): Promise<PluginListenerHandle>;
 }
 
 export interface WriteOptions {
+  /**
+   * Text content to write to the tag
+   */
   text?: string;
-  webrtcData?: WebRTCConnectionInfo;
+  
+  /**
+   * Operation mode: 'reader', 'emulator', or 'read'
+   */
   mode?: 'reader' | 'emulator' | 'read';
+  
+  /**
+   * Type of card to emulate or read
+   */
   cardType?: string;
+  
+  /**
+   * Application ID for ISO-DEP cards
+   */
   aid?: string;
+  
+  /**
+   * Enable secure communication
+   */
   secure?: boolean;
+  
+  /**
+   * Timeout in milliseconds
+   */
   timeout?: number;
+  
+  /**
+   * Original card data for cloning
+   */
+  originalData?: {
+    type: string;
+    data: string;
+    techTypes?: string[];
+    id?: string;
+    ndefMessage?: string;
+  };
 }
 
-// Add new event type
-export interface WebRTCConnectionEvent {
-  type: 'offer' | 'answer';
-  data: WebRTCConnectionInfo;
-}
-
-// Add new interface for read results
-export interface NFCReadResult {
+export interface NFCTagInfo {
+  /**
+   * Unique identifier of the tag
+   */
+  id: string;
+  
+  /**
+   * Type of NFC tag
+   */
   type: string;
-  data?: string;
-  records?: NFCRecord[];
-  techTypes?: string[];
-  id?: string;
+  
+  /**
+   * List of supported technologies
+   */
+  techTypes: string[];
+  
+  /**
+   * Maximum size in bytes
+   */
   maxSize?: number;
+  
+  /**
+   * Whether the tag is writable
+   */
   isWritable?: boolean;
+  
+  /**
+   * NDEF message data if available
+   */
+  ndefMessage?: any;
+  
+  /**
+   * Card-specific data
+   */
+  cardData?: string;
+}
+
+export interface NFCPluginEvents {
+  /**
+   * Emitted when an NFC tag is detected
+   */
+  nfcTagDetected: NFCTagInfo;
+  
+  /**
+   * Emitted when NFC status changes
+   */
+  nfcStatus: { status: string };
+  
+  /**
+   * Emitted when an error occurs
+   */
+  nfcError: { error: string };
+  
+  /**
+   * Emitted when data is successfully read
+   */
+  readSuccess: NFCTagInfo;
+  
+  /**
+   * Emitted when data is successfully written
+   */
+  writeSuccess: { written: boolean; type: string; message: string };
+  
+  /**
+   * Emitted when a write operation fails
+   */
+  writeError: { error: string };
 }
